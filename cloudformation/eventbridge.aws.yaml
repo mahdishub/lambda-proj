@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to schedule a Lambda function using EventBridge
+
+Parameters:
+  LambdaFunctionArn:
+    Description: "ARN of the Lambda function to trigger"
+    Type: String
+  ScheduleExpression:
+    Description: "The schedule expression for the EventBridge rule (e.g., cron(0 12 * * ? *))"
+    Type: String
+    Default: "rate(1 day)" # Default to trigger once per day
+
+Resources:
+  # EventBridge Rule
+  EventBridgeRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Name: "TransactionReportSchedulerRule"
+      Description: "EventBridge Rule to trigger Lambda function at scheduled intervals"
+      ScheduleExpression: !Ref ScheduleExpression
+      State: "ENABLED"
+      Targets:
+        - Arn: !Ref LambdaFunctionArn
+          Id: "TransactionReportTarget"
+
+  # Permission for EventBridge to Invoke Lambda
+  LambdaInvokePermissionForEventBridge:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !Ref LambdaFunctionArn
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt EventBridgeRule.Arn
+
+Outputs:
+  EventBridgeRuleName:
+    Description: "The name of the EventBridge rule"
+    Value: !Ref EventBridgeRule
+
+  EventBridgeRuleArn:
+    Description: "The ARN of the EventBridge rule"
+    Value: !GetAtt EventBridgeRule.Arn

@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to deploy a Lambda function to fetch transactions from RDS and send emails via SNS
+
+Parameters:
+  S3BucketName:
+    Description: "The S3 bucket where the Lambda code is stored"
+    Type: String
+  S3Key:
+    Description: "The S3 key for the Lambda deployment package (e.g., lambda-app.zip)"
+    Type: String
+  LambdaExecutionRoleArn:
+    Description: "IAM Role ARN for Lambda execution with permissions to access SNS and RDS"
+    Type: String
+  LambdaSecurityGroupId:
+    Description: "Security Group ID for the Lambda function"
+    Type: String
+  SnsTopicArn:
+    Description: "The ARN of the SNS topic to which the Lambda function will publish"
+    Type: String
+
+Resources:
+  # Lambda Function
+  LambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "TransactionReportLambda"
+      Runtime: "nodejs22.x"
+      Handler: "index.handler"
+      Role: !Ref LambdaExecutionRoleArn
+      Code:
+        S3Bucket: !Ref S3BucketName
+        S3Key: !Ref S3Key
+      Timeout: 30
+      MemorySize: 256
+      VpcConfig:
+        SubnetIds:
+          - "subnet-042ad7bb9ea2d3926"
+          - "subnet-0fe113b489031951d"
+          - "subnet-0bba9d28301465792"
+          - "subnet-029b09bb9e7288e18"
+          - "subnet-0fbcfa84f1114589f"
+          - "subnet-08cd8c9cd7cb873c4"
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupId
+      Environment:
+        Variables:
+          DATABASE_URL: "postgres://postgres:postgres@my-postgresql-instance.cxdomsh2itks.us-east-1.rds.amazonaws.com:5432/cloudproj" # Replace with your RDS connection string
+          SNS_TOPIC_ARN: !Ref SnsTopicArn
+
+  # Lambda Invoke Permission for SNS Topic
+  LambdaInvokePermissionForSNS:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: "lambda:InvokeFunction"
+      Principal: "sns.amazonaws.com"
+      SourceArn: !Ref SnsTopicArn
+
+Outputs:
+  LambdaFunctionName:
+    Description: "The name of the Lambda function"
+    Value: !Ref LambdaFunction
+
+  LambdaFunctionArn:
+    Description: "The ARN of the Lambda function"
+    Value: !GetAtt LambdaFunction.Arn

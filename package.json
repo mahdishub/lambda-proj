@@ -1,0 +1,16 @@
+{
+    "name": "transaction-reporter",
+    "version": "1.0.0",
+    "description": "AWS Lambda function to fetch transaction data from a database and send it via SNS email",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Your Name",
+    "license": "ISC",
+    "dependencies": {
+      "pg": "^8.11.1",
+      "sequelize": "^6.32.1",
+      "aws-sdk": "^2.1370.0"
+    }
+}
